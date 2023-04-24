@@ -1,28 +1,38 @@
 from fastapi import FastAPI
+from fastapi_users import FastAPIUsers
 from enum import Enum
+import fastapi_users
 from pydantic import BaseModel
 from typing import List
+from auth.auth import auth_backend
+from auth.manager import get_user_manager
+from auth.schemas import UserCreate, UserRead
+from auth.database import User
 
 app = FastAPI(
     title = "BAT agregator"
 )
 
+fastapi_users = FastAPIUsers[User, int](
+    get_user_manager,
+    [auth_backend],
+)
 
-class EnumTypes(Enum): # пример вариантов данных которые могут прийти
-    left = "left"
-    right = "right"
+app.include_router(
+    fastapi_users.get_auth_router(auth_backend),
+    prefix='/auth/jwt',
+    tags=['auth']
+)
 
-class Degree(BaseModel): # Пример использования перечислений
-    id: int 
-    type_degree: EnumTypes
+app.include_router(
+    fastapi_users.get_register_router(UserRead, UserCreate),
+    prefix='/auth',
+    tags=['auth']
+)
 
-class User(BaseModel): 
-    id: int
-    degree: List[Degree] | None # пример испольщования вложенных моделей
-
-
-@app.get("/{id}", response_model=User)
-async def root(id: int = 0):
+ 
+@app.get("/")
+async def root():
     return {'message': 'Hello World'}
 
 
