@@ -1,12 +1,13 @@
 from datetime import datetime
-from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
-from sqlalchemy import Table, Boolean, Column, MetaData, Integer, String, TIMESTAMP
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+from sqlalchemy import TIMESTAMP, Integer, String, Boolean
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import MetaData
+
+from database import Base
+
 
 metadata = MetaData()
-
-class Base(DeclarativeBase):
-    pass
 
 class User(Base):
     __tablename__ = "user"
