@@ -21,7 +21,7 @@ async def startap_event():
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
 
 app.include_router(auth_router)
-app.include_router(product_router, prefix='/shop')
+app.include_router(product_router)
 
 
 @app.get("/")
