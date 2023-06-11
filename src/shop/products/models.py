@@ -1,11 +1,14 @@
 from typing import List, Optional
-from sqlalchemy import Integer, String, Boolean, Text, DECIMAL, ForeignKey, MetaData
+from enum import Enum
+from sqlalchemy import Integer, String, Boolean, Text, DECIMAL, ForeignKey, MetaData, \
+    Enum as EnumType
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from auth.models import User
 
 from database import Base
 
 metadata = MetaData()
+
 
 class Product(Base):
     __tablename__ = 'product'
@@ -25,6 +28,9 @@ class Product(Base):
         'Stock', back_populates='product')
     photos: Mapped[Optional[List['ProductPhoto']]] = relationship(
         'ProductPhoto', back_populates='product')
+    reviews: Mapped[Optional[List['Review']]] = relationship(
+        'Review', back_populates='product'
+    )
 
     def __repr__(self) -> str:
         return f'Product(id={self.id!r}, name={self.name!r}, articul={self.articul!r}, is_active={self.is_active!r}, price={self.price!r})'
@@ -78,6 +84,38 @@ class Stock(Base):
         'Warehouse', back_populates='stocks')
     product: Mapped['Product'] = relationship(
         'Product', back_populates='stocks')
+
+
+class Review(Base):
+    class ReviewRating(Enum):
+        ONE = '1'
+        TWO = '2'
+        THREE = '3'
+        FOUR = '4'
+        FIVE = '5'
+
+    __tablename__ = 'review'
+
+    metadata = metadata
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey('user.id', ondelete='CASCADE')
+    )
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey('product.id', ondelete='CASCADE')
+    )
+    estimate: Mapped[str] = mapped_column(
+        EnumType(ReviewRating, name='estimate')
+    )
+    body: Mapped[str] = mapped_column(
+        String, nullable=False
+    )
+
+    product: Mapped['Product'] = relationship(
+        'Product', back_populates='reviews')
 
 
 # class Cart(Base):
