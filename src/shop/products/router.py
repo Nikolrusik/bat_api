@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Body
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
@@ -11,24 +12,21 @@ from shop.products import models as md
 from shop.products import schemas as sc
 
 
-
 router = APIRouter(
     prefix='',
     tags=['Products'],
 )
 
-### Products ###
+### Category ###
 
 
-@router.get('/products')
-# @cache(expire=300)
-async def get_products_list(session: AsyncSession = Depends(get_async_session)):
+@router.get('/category', response_model=sc.Response[List[sc.Category]])
+async def get_category_list(session: AsyncSession = Depends(get_async_session)):
     '''
-    Getting a list of products
+    Getting a list of category
     '''
     try:
-        query = select(md.Product).options(selectinload(
-            md.Product.photos)).where(md.Product.is_active == True)
+        query = select(md.Category).where(md.Category.is_active == True)
         result = await session.execute(query)
 
         return {
@@ -44,7 +42,54 @@ async def get_products_list(session: AsyncSession = Depends(get_async_session)):
         })
 
 
-@router.get('/products/{product_id}')
+@router.post('/category/create')
+async def create_category(
+        new_category: sc.CategoryCreate = Body(...),
+        photo: Optional[UploadFile] = File(...),
+        session: AsyncSession = Depends(get_async_session)):
+    try:
+        async with session.begin():
+            category = md.Stock(**new_category.dict())
+            session.add(category)
+            await session.commit()
+        return {
+            'status': 'success',
+            'data': category,
+            'details': None
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={
+            'status': 'error',
+            'data': None,
+            'details': str(e)
+        })
+
+
+### Products ###
+@router.get('/products', response_model=sc.Response[List[sc.Product]])
+# @cache(expire=300)
+async def get_products_list(session: AsyncSession = Depends(get_async_session)):
+    '''
+    Getting a list of products
+    '''
+    try:
+        query = select(md.Product).options(selectinload(
+            md.Product.photos)).where(md.Product.is_active == True)
+        result = await session.execute(query)
+        return {
+            'status': 'success',
+            'data': result.mappings().all(),
+            'details': None
+        }
+    except:
+        raise HTTPException(status_code=500, detail={
+            'status': 'error',
+            'data': None,
+            'details': None
+        })
+
+
+@router.get('/products/{product_id}', response_model=sc.Response[sc.Product])
 # @cache(expire=300)
 async def get_product_by_id(
     product_id: int,
@@ -56,7 +101,8 @@ async def get_product_by_id(
     try:
         query = select(md.Product).options(
             selectinload(md.Product.stocks),
-            selectinload(md.Product.photos)).where(md.Product.id == product_id)
+            selectinload(md.Product.photos),
+            selectinload(md.Product.reviews)).where(md.Product.id == product_id)
         result = await session.execute(query)
         product = result.scalar_one_or_none()
 
@@ -123,7 +169,7 @@ async def create_product(
         })
 
 
-@router.patch('/products/update/{id}')
+@router.patch('/products/update/{id}', response_model=sc.Response[sc.Product])
 async def update_product(
     id: int,
     updated_data: sc.ProductUpdate = Body(...),
@@ -214,7 +260,7 @@ async def delete_product(
 ### Stocks ###
 
 
-@router.get('/stocks')
+@router.get('/stocks', response_model=sc.Response[List[sc.Stock]])
 async def get_stocks_list(
     limit: int = 25,
     offset: int = 0,
@@ -267,7 +313,7 @@ async def create_stocks(
         })
 
 
-@router.patch('/stocks/update/{id}')
+@router.patch('/stocks/update/{id}', response_model=sc.Response[sc.Stock])
 async def update_stock(
     id: int,
     updated_data: sc.Stock,
@@ -336,7 +382,7 @@ async def delete_stock(
 ### Warehouses ###
 
 
-@router.get('/warehouses')
+@router.get('/warehouses', response_model=sc.Response[List[sc.Warehouse]])
 async def get_warehouses_list(session: AsyncSession = Depends(get_async_session)):
     '''
     Getting list of warehouse
@@ -385,7 +431,7 @@ async def create_warehouses(
         })
 
 
-@router.patch('/warehouses/update/{id}')
+@router.patch('/warehouses/update/{id}', response_model=sc.Response[sc.Warehouse])
 async def update_warehouse(
     id: int,
     updated_data: sc.Warehouse,

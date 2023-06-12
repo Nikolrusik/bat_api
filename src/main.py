@@ -25,5 +25,5 @@ app.include_router(product_router)
 
 
 @app.get("/")
-async def root():
+async def gel_main():
     return {'message': 'Hello World'}

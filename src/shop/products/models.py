@@ -10,6 +10,28 @@ from database import Base
 metadata = MetaData()
 
 
+class Category(Base):
+    __tablename__ = 'category'
+
+    metadata = metadata
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True
+    )
+    name: Mapped[str] = mapped_column(String(255))
+    discount: Mapped[int] = mapped_column(Integer, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    parent_id: Mapped[int] = mapped_column(Integer, ForeignKey(
+        'category.id', ondelete='CASCADE'), nullable=True)
+    photo_url: Mapped[str] = mapped_column(String, nullable=True)
+
+    children: Mapped['Category'] = relationship(
+        'Category', backref='parent', remote_side=[id])
+
+    def __repr__(self):
+        return f'Category(id={self.id}, name={self.name})'
+
+
 class Product(Base):
     __tablename__ = 'product'
 
@@ -23,6 +45,8 @@ class Product(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     price: Mapped[DECIMAL] = mapped_column(
         DECIMAL(precision=8, scale=2), default=0.0)
+    category_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey('category.id'))
 
     stocks: Mapped[Optional[List['Stock']]] = relationship(
         'Stock', back_populates='product')
@@ -74,10 +98,10 @@ class Stock(Base):
 
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True)
-    warehouse_id: Mapped[int] = mapped_column(
-        ForeignKey('warehouse.id', ondelete='CASCADE'))
-    product_id: Mapped[int] = mapped_column(
-        ForeignKey('product.id', ondelete='CASCADE'))
+    warehouse_id: Mapped[int] = mapped_column(Integer,
+                                              ForeignKey('warehouse.id', ondelete='CASCADE'))
+    product_id: Mapped[int] = mapped_column(Integer,
+                                            ForeignKey('product.id', ondelete='CASCADE'))
     quantity: Mapped[int] = mapped_column(Integer, default=1)
 
     warehouse: Mapped['Warehouse'] = relationship(
@@ -104,9 +128,10 @@ class Review(Base):
     user_id: Mapped[int] = mapped_column(
         ForeignKey('user.id', ondelete='CASCADE')
     )
-    product_id: Mapped[int] = mapped_column(
-        ForeignKey('product.id', ondelete='CASCADE')
-    )
+    product_id: Mapped[int] = mapped_column(Integer,
+                                            ForeignKey(
+                                                'product.id', ondelete='CASCADE')
+                                            )
     estimate: Mapped[str] = mapped_column(
         EnumType(ReviewRating, name='estimate')
     )
