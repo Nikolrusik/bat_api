@@ -3,11 +3,9 @@ from enum import Enum
 from sqlalchemy import Integer, String, Boolean, Text, DECIMAL, ForeignKey, MetaData, \
     Enum as EnumType
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from auth.models import User
+from src.auth.models import User
 
-from database import Base
-
-metadata = MetaData()
+from src.database import Base, metadata
 
 
 class Category(Base):
@@ -125,9 +123,10 @@ class Review(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True
     )
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey('user.id', ondelete='CASCADE')
-    )
+    user_id: Mapped[int] = mapped_column(Integer,
+                                         ForeignKey(
+                                             'user.id', ondelete='CASCADE')
+                                         )
     product_id: Mapped[int] = mapped_column(Integer,
                                             ForeignKey(
                                                 'product.id', ondelete='CASCADE')
