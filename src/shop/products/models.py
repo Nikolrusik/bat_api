@@ -3,9 +3,9 @@ from enum import Enum
 from sqlalchemy import Integer, String, Boolean, Text, DECIMAL, ForeignKey, MetaData, \
     Enum as EnumType
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from src.auth.models import User
+from auth.models import User
 
-from src.database import Base, metadata
+from database import Base, metadata
 
 
 class Category(Base):

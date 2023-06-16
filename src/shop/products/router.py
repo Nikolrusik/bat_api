@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Body
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Body
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
@@ -45,13 +45,21 @@ async def get_category_list(session: AsyncSession = Depends(get_async_session)):
 @router.post('/category/create')
 async def create_category(
         new_category: sc.CategoryCreate = Body(...),
-        photo: Optional[UploadFile] = File(...),
+        photo: Optional[UploadFile] = File(),
         session: AsyncSession = Depends(get_async_session)):
     try:
         async with session.begin():
-            category = md.Stock(**new_category.dict())
+            photo_data = await photo.read()
+
+            # временное хранилище файлов
+            photo_url = f'./path/category/{photo.filename}'
+            category = md.Category(**new_category.dict())
+            category.photo_url = photo_url
             session.add(category)
             await session.commit()
+
+            with open(photo_url, 'wb') as file:
+                file.write(photo_data)
         return {
             'status': 'success',
             'data': category,
@@ -128,7 +136,7 @@ async def get_product_by_id(
 
 @router.post('/products/create')
 async def create_product(
-        new_product: sc.ProductCreate = Body(...),
+        new_product: sc.ProductCreate = Form(...),
         photos: List[UploadFile] = File(...),
         session: AsyncSession = Depends(get_async_session)):
     '''

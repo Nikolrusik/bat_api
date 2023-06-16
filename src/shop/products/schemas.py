@@ -30,15 +30,23 @@ class CategoryBase(BaseModel):
     discount: int
     is_active: bool
     parent_id: Optional[int] = None
-    photo_url: Optional[str] = None
 
 
 class CategoryCreate(CategoryBase):
-    pass
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate_to_json
+
+    @classmethod
+    def validate_to_json(cls, value):
+        if isinstance(value, str):
+            return cls(**json.loads(value))
+        return value
 
 
 class Category(CategoryBase):
     id: int
+    photo_url: Optional[str] = None
 # Stock schemas
 
 

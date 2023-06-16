@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import TIMESTAMP, Integer, String, Boolean, MetaData
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.database import Base, metadata
+from database import Base, metadata
 
 # metadata = MetaData()
 
