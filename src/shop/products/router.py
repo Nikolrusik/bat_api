@@ -1,12 +1,13 @@
 from typing import List, Optional
+import os
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Body
-from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select, delete
 from fastapi_cache.decorator import cache
 
+from aws_config import s3_client, AWS_FILTEPATH_GET
 from database import get_async_session
 from shop.products import models as md
 from shop.products import schemas as sc
@@ -16,11 +17,11 @@ router = APIRouter(
     prefix='',
     tags=['Products'],
 )
-
+test_bucket_name = 'bat_test'
 ### Category ###
 
 
-@router.get('/category', response_model=sc.Response[List[sc.Category]])
+@router.get('/category/list', response_model=sc.Response[List[sc.Category]])
 async def get_category_list(session: AsyncSession = Depends(get_async_session)):
     '''
     Getting a list of category
@@ -31,7 +32,7 @@ async def get_category_list(session: AsyncSession = Depends(get_async_session)):
 
         return {
             'status': 'success',
-            'data': result.mappings().all(),
+            'data': result.scalars().all(),
             'details': None
         }
     except:
@@ -45,26 +46,35 @@ async def get_category_list(session: AsyncSession = Depends(get_async_session)):
 @router.post('/category/create')
 async def create_category(
         new_category: sc.CategoryCreate = Body(...),
-        photo: Optional[UploadFile] = File(),
+        photo: Optional[UploadFile] = File(default=None),
         session: AsyncSession = Depends(get_async_session)):
     try:
         async with session.begin():
-            photo_data = await photo.read()
-
-            # временное хранилище файлов
-            photo_url = f'./path/category/{photo.filename}'
             category = md.Category(**new_category.dict())
-            category.photo_url = photo_url
+
             session.add(category)
+            await session.flush()
+
+            if photo:
+                photo_data = await photo.read()
+                # временное хранилище файлов
+                photo_url = f'./path/category/{photo.filename}'
+                with open(photo_url, 'wb') as file:
+                    file.write(photo_data)
+            else:
+                photo_url = f'./path/category/default.png'
+            category.photo_url = photo_url
+
             await session.commit()
 
-            with open(photo_url, 'wb') as file:
-                file.write(photo_data)
-        return {
-            'status': 'success',
-            'data': category,
+        return {'status': 'success'}
+    except SQLAlchemyError as e:
+        error = str(e.__dict__['orig'])
+        raise HTTPException(status_code=500, detail={
+            'status': 'error',
+            'data': error,
             'details': None
-        }
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail={
             'status': 'error',
@@ -74,7 +84,7 @@ async def create_category(
 
 
 ### Products ###
-@router.get('/products', response_model=sc.Response[List[sc.Product]])
+@router.get('/products/list', response_model=sc.Response[List[sc.ProductForList]])
 # @cache(expire=300)
 async def get_products_list(session: AsyncSession = Depends(get_async_session)):
     '''
@@ -86,7 +96,7 @@ async def get_products_list(session: AsyncSession = Depends(get_async_session)):
         result = await session.execute(query)
         return {
             'status': 'success',
-            'data': result.mappings().all(),
+            'data': result.scalars().all(),
             'details': None
         }
     except:
@@ -151,13 +161,20 @@ async def create_product(
             for photo in photos:
                 photo_data = await photo.read()
                 # временное хранилище файлов
-                photo_url = f'./path/{photo.filename}'
-                product_photo = md.ProductPhoto(
-                    product_id=product.id, photo_url=photo_url)
-                session.add(product_photo)
+                temp_url = f'./static/temp/{photo.filename}'
 
-                with open(photo_url, 'wb') as file:
+                product_photo = md.ProductPhoto(
+                    product_id=product.id, photo_url=f'temp_none')
+                session.add(product_photo)
+                await session.flush()
+
+                aws_filename = f'proudct_{product_photo.id}.png'
+                product_photo.photo_url = f'{AWS_FILTEPATH_GET}/product/{aws_filename}'
+                with open(temp_url, 'wb') as file:
                     file.write(photo_data)
+                    s3_client.upload_file(
+                        temp_url, test_bucket_name, f'static/product/{aws_filename}')
+                    os.remove(temp_url)
 
             await session.commit()
 
@@ -268,7 +285,7 @@ async def delete_product(
 ### Stocks ###
 
 
-@router.get('/stocks', response_model=sc.Response[List[sc.Stock]])
+@router.get('/stocks/list', response_model=sc.Response[List[sc.Stock]])
 async def get_stocks_list(
     limit: int = 25,
     offset: int = 0,
@@ -390,7 +407,7 @@ async def delete_stock(
 ### Warehouses ###
 
 
-@router.get('/warehouses', response_model=sc.Response[List[sc.Warehouse]])
+@router.get('/warehouses/list', response_model=sc.Response[List[sc.Warehouse]])
 async def get_warehouses_list(session: AsyncSession = Depends(get_async_session)):
     '''
     Getting list of warehouse

@@ -54,8 +54,8 @@ class Product(Base):
         'Review', back_populates='product'
     )
 
-    def __repr__(self) -> str:
-        return f'Product(id={self.id!r}, name={self.name!r}, articul={self.articul!r}, is_active={self.is_active!r}, price={self.price!r})'
+    # def __repr__(self) -> str:
+    #     return f'Product(id={self.id!r}, name={self.name!r}, articul={self.articul!r}, is_active={self.is_active!r}, price={self.price!r})'
 
 
 class ProductPhoto(Base):

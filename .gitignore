@@ -8,6 +8,7 @@ __pycache__/
 *$py.class
 .vscode
 path/
+aws
 /path
 # C extensions
 *.so

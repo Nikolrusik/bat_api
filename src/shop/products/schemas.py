@@ -8,6 +8,11 @@ import json
 DataT = TypeVar('DataT')
 
 
+class BaseOrmModel(BaseModel):
+    class Config:
+        orm_mode = True
+
+
 class Response(GenericModel, Generic[DataT]):
     '''
     Response is a generic model that takes a type parameter DataT. It has three fields:
@@ -19,13 +24,13 @@ class Response(GenericModel, Generic[DataT]):
 
     status: str
     data: DataT
-    details: Optional[str]
+    details: Optional[str] = None
 
 
 # Category schemas
 
 
-class CategoryBase(BaseModel):
+class CategoryBase(BaseOrmModel):
     name: str
     discount: int
     is_active: bool
@@ -47,10 +52,11 @@ class CategoryCreate(CategoryBase):
 class Category(CategoryBase):
     id: int
     photo_url: Optional[str] = None
+
 # Stock schemas
 
 
-class StockBase(BaseModel):
+class StockBase(BaseOrmModel):
     product_id: int
     warehouse_id: int
     quantity: int
@@ -63,13 +69,11 @@ class StockCreate(StockBase):
 class Stock(StockBase):
     id: int
 
-    class Config:
-        orm_mode = True
 
 # Product schemas
 
 
-class ProductBase(BaseModel):
+class ProductBase(BaseOrmModel):
     name: str
     articul: str
     description: Optional[str] = None
@@ -102,17 +106,19 @@ class ProductUpdate(ProductBase):
         return value
 
 
-class Product(ProductBase):
+class ProductForList(ProductBase):
     id: int
-    stocks: List[Stock] = []
+    photos: List
 
-    class Config:
-        orm_mode = True
+
+class Product(ProductForList):
+    stock: List[Stock]
+
 
 # Warehouse schemas
 
 
-class WarehouseBase(BaseModel):
+class WarehouseBase(BaseOrmModel):
     name: str
 
 
@@ -122,12 +128,13 @@ class WarehouseCreate(WarehouseBase):
 
 class Warehouse(WarehouseBase):
     id: int
+    stock: list = []
 
 
 # Reviews schemas
 
 
-class ReviewBase(BaseModel):
+class ReviewBase(BaseOrmModel):
     body: str
     product_id: int
     user_id: int
