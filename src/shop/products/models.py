@@ -1,12 +1,13 @@
+from datetime import datetime
 from typing import List, Optional
 from enum import Enum
-from sqlalchemy import Integer, String, Boolean, Text, DECIMAL, ForeignKey, MetaData, \
-    Enum as EnumType
+
+from sqlalchemy import Integer, String, Boolean, Text, DECIMAL, ForeignKey, \
+    Enum as EnumType, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from auth.models import User
 
 from database import Base, metadata
-
+# from auth.models import User
 
 class Category(Base):
     __tablename__ = 'category'
@@ -54,8 +55,8 @@ class Product(Base):
         'Review', back_populates='product'
     )
 
-    # def __repr__(self) -> str:
-    #     return f'Product(id={self.id!r}, name={self.name!r}, articul={self.articul!r}, is_active={self.is_active!r}, price={self.price!r})'
+    def __repr__(self) -> str:
+        return f'Product(id={self.id!r}, name={self.name!r}, articul={self.articul!r}, is_active={self.is_active!r}, price={self.price!r})'
 
 
 class ProductPhoto(Base):
@@ -137,6 +138,8 @@ class Review(Base):
     body: Mapped[str] = mapped_column(
         String, nullable=False
     )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=func.now(), nullable=False)
 
     product: Mapped['Product'] = relationship(
         'Product', back_populates='reviews')

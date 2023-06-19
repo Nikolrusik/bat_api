@@ -2,16 +2,17 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy import engine_from_config
 from logging.config import fileConfig
-from src.database import metadata
-from src.config import DB_HOST, DB_PORT, DB_USER, DB_NAME, DB_PASS
-from src.shop.models import *
-from src.auth.models import *
 
 import os
 import sys
 
 sys.path.append(os.path.join(sys.path[0], 'src'))
 
+from src.database import metadata
+
+from src.shop.models import *
+from src.auth.models import *
+from src.config import DB_HOST, DB_PORT, DB_USER, DB_NAME, DB_PASS
 
 # from src.auth.models import metadata as auth_metadata
 # from src.shop.products.models import metadata as shop_metadata

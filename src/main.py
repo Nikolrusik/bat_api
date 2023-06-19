@@ -4,8 +4,8 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
 
-from auth.router import router as auth_router
 from shop.router import router as product_router
+from auth.router import router as auth_router
 
 
 app = FastAPI(

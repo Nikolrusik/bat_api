@@ -17,6 +17,7 @@ router = APIRouter(
     prefix='',
     tags=['Products'],
 )
+
 test_bucket_name = 'bat_test'
 ### Category ###
 
@@ -281,6 +282,30 @@ async def delete_product(
             'data': None,
             'details': str(e)
         })
+
+### Reviews ###
+
+
+@router.get('/products/{product_id}/reviews', response_model=sc.Response[List[sc.Review]])
+async def get_reviews_by_product_id(
+    product_id: int,
+    session: AsyncSession = Depends(get_async_session)
+):
+    try:
+        query = select(md.Review).where(md.Review.product_id == product_id)
+        result = await session.execute(query)
+        return {
+            'status': 'success',
+            'data': result.scalars().all(),
+            'details': None
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={
+            'status': 'error',
+            'data': None,
+            'details': str(e)
+        })
+
 
 ### Stocks ###
 

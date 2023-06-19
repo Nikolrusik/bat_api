@@ -1,4 +1,5 @@
 from typing import Any, List, Optional, TypeVar, Generic
+from datetime import datetime
 
 from pydantic import BaseModel, validator, ValidationError
 from pydantic.generics import GenericModel
@@ -112,7 +113,26 @@ class ProductForList(ProductBase):
 
 
 class Product(ProductForList):
-    stock: List[Stock]
+    stocks: List[Stock]
+    reviews: List
+
+### Reviews ###
+
+
+class ReviewBase(BaseOrmModel):
+    user_id: int
+    product_id: int
+    estimate: int
+    body: str
+    created_at: datetime
+
+
+class ReviewCreate(ReviewBase):
+    pass
+
+
+class Review(ReviewBase):
+    id: int
 
 
 # Warehouse schemas
