@@ -3,12 +3,12 @@ import os
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, aliased
 from sqlalchemy import select, delete
 from fastapi_cache.decorator import cache
 
-from aws_config import s3_client, AWS_FILTEPATH_GET
 from database import get_async_session
+from shop.products import utils as ut
 from shop.products import models as md
 from shop.products import schemas as sc
 
@@ -18,7 +18,6 @@ router = APIRouter(
     tags=['Products'],
 )
 
-test_bucket_name = 'bat_test'
 ### Category ###
 
 
@@ -144,6 +143,33 @@ async def get_product_by_id(
             'details': str(e)
         })
 
+@router.get('/products/list_in_category/{category_id}')
+async def get_product_list_in_category(category_id: int, session: AsyncSession = Depends(get_async_session)):
+    try:
+        cte = select(md.Category.id, md.Category.parent_id).cte(recursive=True)
+        cte_alias = aliased(cte, name='cte_alias')
+        recursive_part = select(md.Category.id, md.Category.parent_id).where(md.Category.parent_id == cte_alias.c.id)
+
+        cte = cte.union_all(recursive_part)
+
+        subquery = select(cte.c.id).where(cte_alias.c.parent_id == category_id).correlate_except(cte_alias)
+
+        query = select(md.Product).where(md.Product.category_id.in_(subquery)).order_by(md.Product.category_id)
+
+        result = await session.execute(query)
+
+        return {
+            'status': 'success',
+            'data': result.scalars().all(),
+            'details': None
+        }
+    except:
+        raise HTTPException(status_code=500, detail={
+            'status': 'error',
+            'data': None,
+            'details': None
+        })
+    
 
 @router.post('/products/create')
 async def create_product(
@@ -160,22 +186,7 @@ async def create_product(
             await session.flush()
 
             for photo in photos:
-                photo_data = await photo.read()
-                # временное хранилище файлов
-                temp_url = f'./static/temp/{photo.filename}'
-
-                product_photo = md.ProductPhoto(
-                    product_id=product.id, photo_url=f'temp_none')
-                session.add(product_photo)
-                await session.flush()
-
-                aws_filename = f'proudct_{product_photo.id}.png'
-                product_photo.photo_url = f'{AWS_FILTEPATH_GET}/product/{aws_filename}'
-                with open(temp_url, 'wb') as file:
-                    file.write(photo_data)
-                    s3_client.upload_file(
-                        temp_url, test_bucket_name, f'static/product/{aws_filename}')
-                    os.remove(temp_url)
+               product_photo = await ut.save_product_photo(product, photo, session)
 
             await session.commit()
 
@@ -196,7 +207,7 @@ async def create_product(
 
 
 @router.patch('/products/update/{id}', response_model=sc.Response[sc.Product])
-async def update_product(
+async def update_product_by_id(
     id: int,
     updated_data: sc.ProductUpdate = Body(...),
     delete_photo_ids: str = Body([]),
@@ -259,7 +270,7 @@ async def update_product(
 
 
 @router.delete('/products/delete/{id}')
-async def delete_product(
+async def delete_product_by_id(
     id: int,
     session: AsyncSession = Depends(get_async_session)
 ):
