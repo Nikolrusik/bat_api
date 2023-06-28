@@ -7,7 +7,6 @@ from sqlalchemy import Integer, String, Boolean, Text, DECIMAL, ForeignKey, \
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, metadata
-# from auth.models import User
 
 class Category(Base):
     __tablename__ = 'category'
@@ -145,27 +144,3 @@ class Review(Base):
         'Product', back_populates='reviews')
 
 
-# class Cart(Base):
-#     __tablename__ = 'cart'
-
-#     metadata = metadata
-
-#     id: Mapped[int] = mapped_column(
-#         Integer, primary_key=True
-#     )
-#     product_id: Mapped[int] = mapped_column(
-#         ForeignKey('product.id', ondelete='CASCADE')
-#     )
-#     user_id: Mapped[int] = mapped_column(
-#         ForeignKey('user.id', ondelete='CASCADE')
-#     )
-#     amount: Mapped[int] = mapped_column(Integer, default=1)
-
-#     user: Mapped['User'] = relationship(
-#         'User', back_populates='cart'
-#     )
-
-#     # Доработать при добавлении нескольких складов
-#     # warehouse_id: Mapped[int] = mapped_column(
-#     #     ForeignKey('')
-#     # )

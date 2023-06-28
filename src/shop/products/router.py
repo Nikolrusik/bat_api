@@ -1,11 +1,11 @@
 from typing import List, Optional
-import os
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload, aliased
 from sqlalchemy import select, delete
 from fastapi_cache.decorator import cache
+from schemas import Response
 
 from database import get_async_session
 from shop.products import utils as ut
@@ -15,13 +15,13 @@ from shop.products import schemas as sc
 
 router = APIRouter(
     prefix='',
-    tags=['Products'],
+    tags=['Shop[Products]'],
 )
 
 ### Category ###
 
 
-@router.get('/category/list', response_model=sc.Response[List[sc.Category]])
+@router.get('/category/list', response_model=Response[List[sc.Category]])
 async def get_category_list(session: AsyncSession = Depends(get_async_session)):
     '''
     Getting a list of category
@@ -84,7 +84,7 @@ async def create_category(
 
 
 ### Products ###
-@router.get('/products/list', response_model=sc.Response[List[sc.ProductForList]])
+@router.get('/products/list', response_model=Response[List[sc.ProductForList]])
 # @cache(expire=300)
 async def get_products_list(session: AsyncSession = Depends(get_async_session)):
     '''
@@ -107,7 +107,7 @@ async def get_products_list(session: AsyncSession = Depends(get_async_session)):
         })
 
 
-@router.get('/products/{product_id}', response_model=sc.Response[sc.Product])
+@router.get('/products/{product_id}', response_model=Response[sc.Product])
 # @cache(expire=300)
 async def get_product_by_id(
     product_id: int,
@@ -145,6 +145,9 @@ async def get_product_by_id(
 
 @router.get('/products/list_in_category/{category_id}')
 async def get_product_list_in_category(category_id: int, session: AsyncSession = Depends(get_async_session)):
+    '''
+    This endpoint returns a list of all active products for the selected category and its subcategories.
+    '''
     try:
         cte = select(md.Category.id, md.Category.parent_id).cte(recursive=True)
         cte_alias = aliased(cte, name='cte_alias')
@@ -206,7 +209,7 @@ async def create_product(
         })
 
 
-@router.patch('/products/update/{id}', response_model=sc.Response[sc.Product])
+@router.patch('/products/update/{id}', response_model=Response[sc.Product])
 async def update_product_by_id(
     id: int,
     updated_data: sc.ProductUpdate = Body(...),
@@ -297,7 +300,7 @@ async def delete_product_by_id(
 ### Reviews ###
 
 
-@router.get('/products/{product_id}/reviews', response_model=sc.Response[List[sc.Review]])
+@router.get('/products/{product_id}/reviews', response_model=Response[List[sc.Review]])
 async def get_reviews_by_product_id(
     product_id: int,
     session: AsyncSession = Depends(get_async_session)
@@ -321,7 +324,7 @@ async def get_reviews_by_product_id(
 ### Stocks ###
 
 
-@router.get('/stocks/list', response_model=sc.Response[List[sc.Stock]])
+@router.get('/stocks/list', response_model=Response[List[sc.Stock]])
 async def get_stocks_list(
     limit: int = 25,
     offset: int = 0,
@@ -374,7 +377,7 @@ async def create_stocks(
         })
 
 
-@router.patch('/stocks/update/{id}', response_model=sc.Response[sc.Stock])
+@router.patch('/stocks/update/{id}', response_model=Response[sc.Stock])
 async def update_stock(
     id: int,
     updated_data: sc.Stock,
@@ -443,7 +446,7 @@ async def delete_stock(
 ### Warehouses ###
 
 
-@router.get('/warehouses/list', response_model=sc.Response[List[sc.Warehouse]])
+@router.get('/warehouses/list', response_model=Response[List[sc.Warehouse]])
 async def get_warehouses_list(session: AsyncSession = Depends(get_async_session)):
     '''
     Getting list of warehouse
@@ -492,7 +495,7 @@ async def create_warehouses(
         })
 
 
-@router.patch('/warehouses/update/{id}', response_model=sc.Response[sc.Warehouse])
+@router.patch('/warehouses/update/{id}', response_model=Response[sc.Warehouse])
 async def update_warehouse(
     id: int,
     updated_data: sc.Warehouse,
