@@ -11,14 +11,15 @@ from database import get_async_session
 from shop.products import utils as ut
 from shop.products import models as md
 from shop.products import schemas as sc
-
+from fastapi.responses import JSONResponse
+from responses import ResponseData
 
 router = APIRouter(
     prefix='',
     tags=['Shop[Products]'],
 )
 
-### Category ###
+# Category #
 
 
 @router.get('/category/list', response_model=Response[List[sc.Category]])
@@ -26,21 +27,23 @@ async def get_category_list(session: AsyncSession = Depends(get_async_session)):
     '''
     Getting a list of category
     '''
-    try:
-        query = select(md.Category).where(md.Category.is_active == True)
-        result = await session.execute(query)
+    # try:
+    query = select(md.Category).where(md.Category.is_active == True)
+    result = await session.execute(query)
+    print(result.scalars().all())
+    return ResponseData(result.scalars().all())
 
-        return {
-            'status': 'success',
-            'data': result.scalars().all(),
-            'details': None
-        }
-    except:
-        raise HTTPException(status_code=500, detail={
-            'status': 'error',
-            'data': None,
-            'details': None
-        })
+    # except Exception:
+    #     # raise HTTPException(detail={
+    #     #     'status': 'error',
+    #     #     'data': None,
+    #     #     'details': None
+    #     # }, status_code=500)
+    #     return JSONResponse({
+    #         'status': 'error',
+    #         'data': None,
+    #         'details': None
+    #     }, status_code=201)
 
 
 @router.post('/category/create')
@@ -83,23 +86,20 @@ async def create_category(
         })
 
 
-### Products ###
+# Products #
 @router.get('/products/list', response_model=Response[List[sc.ProductForList]])
 # @cache(expire=300)
 async def get_products_list(session: AsyncSession = Depends(get_async_session)):
     '''
     Getting a list of products
     '''
+
     try:
         query = select(md.Product).options(selectinload(
             md.Product.photos)).where(md.Product.is_active == True)
         result = await session.execute(query)
-        return {
-            'status': 'success',
-            'data': result.scalars().all(),
-            'details': None
-        }
-    except:
+        return ResponseData(result.scalars().all())
+    except Exception:
         raise HTTPException(status_code=500, detail={
             'status': 'error',
             'data': None,
@@ -131,17 +131,14 @@ async def get_product_by_id(
                 'details': 'Object not found'
             })
 
-        return {
-            'status': 'success',
-            'data': product,
-            'details': None
-        }
+        return ResponseData(product)
     except Exception as e:
         raise HTTPException(status_code=500, detail={
             'status': 'error',
             'data': None,
             'details': str(e)
         })
+
 
 @router.get('/products/list_in_category/{category_id}')
 async def get_product_list_in_category(category_id: int, session: AsyncSession = Depends(get_async_session)):
@@ -151,28 +148,27 @@ async def get_product_list_in_category(category_id: int, session: AsyncSession =
     try:
         cte = select(md.Category.id, md.Category.parent_id).cte(recursive=True)
         cte_alias = aliased(cte, name='cte_alias')
-        recursive_part = select(md.Category.id, md.Category.parent_id).where(md.Category.parent_id == cte_alias.c.id)
+        recursive_part = select(md.Category.id, md.Category.parent_id).where(
+            md.Category.parent_id == cte_alias.c.id)
 
         cte = cte.union_all(recursive_part)
 
-        subquery = select(cte.c.id).where(cte_alias.c.parent_id == category_id).correlate_except(cte_alias)
+        subquery = select(cte.c.id).where(
+            cte_alias.c.parent_id == category_id).correlate_except(cte_alias)
 
-        query = select(md.Product).where(md.Product.category_id.in_(subquery)).order_by(md.Product.category_id)
+        query = select(md.Product).where(md.Product.category_id.in_(
+            subquery)).order_by(md.Product.category_id)
 
         result = await session.execute(query)
 
-        return {
-            'status': 'success',
-            'data': result.scalars().all(),
-            'details': None
-        }
-    except:
+        return ResponseData(result.scalars().all())
+    except Exception:
         raise HTTPException(status_code=500, detail={
             'status': 'error',
             'data': None,
             'details': None
         })
-    
+
 
 @router.post('/products/create')
 async def create_product(
@@ -189,7 +185,7 @@ async def create_product(
             await session.flush()
 
             for photo in photos:
-               product_photo = await ut.save_product_photo(product, photo, session)
+                product_photo = await ut.save_product_photo(product, photo, session)
 
             await session.commit()
 
@@ -297,7 +293,7 @@ async def delete_product_by_id(
             'details': str(e)
         })
 
-### Reviews ###
+# Reviews #
 
 
 @router.get('/products/{product_id}/reviews', response_model=Response[List[sc.Review]])
@@ -308,11 +304,8 @@ async def get_reviews_by_product_id(
     try:
         query = select(md.Review).where(md.Review.product_id == product_id)
         result = await session.execute(query)
-        return {
-            'status': 'success',
-            'data': result.scalars().all(),
-            'details': None
-        }
+
+        return ResponseData(result.scalars().all())
     except Exception as e:
         raise HTTPException(status_code=500, detail={
             'status': 'error',
@@ -321,7 +314,7 @@ async def get_reviews_by_product_id(
         })
 
 
-### Stocks ###
+# Stocks #
 
 
 @router.get('/stocks/list', response_model=Response[List[sc.Stock]])
@@ -338,11 +331,7 @@ async def get_stocks_list(
         result = await session.execute(query)
         stocks = result.scalars().all()
 
-        return {
-            'status': 'success',
-            'data': stocks,
-            'details': None
-        }
+        return ResponseData(stocks)
     except Exception as e:
         raise HTTPException(status_code=500, detail={
             'status': 'error',
@@ -364,11 +353,7 @@ async def create_stocks(
             stock = md.Stock(**new_stock.dict())
             session.add(stock)
             await session.commit()
-        return {
-            'status': 'success',
-            'data': stock,
-            'details': None
-        }
+        return ResponseData(stock)
     except Exception as e:
         raise HTTPException(status_code=500, detail={
             'status': 'error',
@@ -443,7 +428,7 @@ async def delete_stock(
             'details': str(e)
         })
 
-### Warehouses ###
+# Warehouses #
 
 
 @router.get('/warehouses/list', response_model=Response[List[sc.Warehouse]])
@@ -456,11 +441,7 @@ async def get_warehouses_list(session: AsyncSession = Depends(get_async_session)
             md.Warehouse.stocks))
         result = await session.execute(query)
 
-        return {
-            'status': 'success',
-            'data': result.scalars().all(),
-            'details': None
-        }
+        return ResponseData(result.scalars().all())
     except Exception as e:
         raise HTTPException(status_code=500, detail={
             'status': 'error',

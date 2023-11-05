@@ -9,24 +9,9 @@ from shop.products import models as md
 
 from aws_config import s3_client, AWS_FILTEPATH_GET
 
-#   photo_data = await photo.read()
-#                 # временное хранилище файлов
-#                 temp_url = f'./static/temp/{photo.filename}'
-
-#                 product_photo = md.ProductPhoto(
-#                     product_id=product.id, photo_url=f'temp_none')
-#                 session.add(product_photo)
-#                 await session.flush()
-
-#                 aws_filename = f'proudct_{product_photo.id}.png'
-#                 product_photo.photo_url = f'{AWS_FILTEPATH_GET}/product/{aws_filename}'
-#                 with open(temp_url, 'wb') as file:
-#                     file.write(photo_data)
-#                     s3_client.upload_file(
-#                         temp_url, test_bucket_name, f'static/product/{aws_filename}')
-#                     os.remove(temp_url)
 
 test_bucket_name = 'bat_test'
+
 
 async def save_product_photo(product: md.Product, photo: UploadFile, session: AsyncSession):
     aws_filename = f'product_{product.id}.png'

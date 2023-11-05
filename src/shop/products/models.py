@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, metadata
 
+
 class Category(Base):
     __tablename__ = 'category'
 
@@ -142,5 +143,3 @@ class Review(Base):
 
     product: Mapped['Product'] = relationship(
         'Product', back_populates='reviews')
-
-

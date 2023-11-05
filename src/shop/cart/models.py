@@ -27,13 +27,12 @@ class Cart(Base):
     )
     amount: Mapped[int] = mapped_column(Integer, default=1)
 
-
-    user: Mapped['User'] = relationship(
-        'User', back_populates='cart'
-    )
-    product: Mapped['Product'] = relationship(
-        'Product', back_populates='cart'
-    )
+    # user: Mapped['User'] = relationship(
+    #     'User', back_populates='cart'
+    # )
+    # product: Mapped['Product'] = relationship(
+    #     'Product', back_populates='cart'
+    # )
 
     # Доработать при добавлении нескольких складов
     # warehouse_id: Mapped[int] = mapped_column(
